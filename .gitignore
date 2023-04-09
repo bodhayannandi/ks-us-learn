@@ -1,0 +1,9 @@
+#ignore all files in this folder except *.c, *.h files and Makefile
+
+*.mod.*
+*.mod
+*.ko
+.*.cmd
+*.symvers
+*.o
+*.order
