@@ -4,13 +4,6 @@
 
 #define NETLINK_TEST_PROTOCOL 31
 
-static struct sock *nl_sk = NULL;
-
-void hellonllkm_rcv_msg(struct sk_buff *skb)
-{
-    
-}
-
 static void nlmsg_dump(struct nlmsghdr *nlh)
 {
     if(nlh == NULL) return;
@@ -24,9 +17,16 @@ static void nlmsg_dump(struct nlmsghdr *nlh)
     printk("...end dump\n"); 
 }
 
+void hellonllkm_rcv_msg(struct sk_buff *skb)
+{
+    
+}
+
 static struct netlink_kernel_cfg hellonlcfg = {
     .input = hellonllkm_rcv_msg,
 };
+
+static struct sock *nl_sk = NULL;
 
 static int __init hellonllkm_start(void)
 {
