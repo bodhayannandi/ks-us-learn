@@ -13,6 +13,8 @@ void hellonllkm_rcv_msg(struct sk_buff *skb)
 
 static void nlmsg_dump(struct nlmsghdr *nlh)
 {
+    if(nlh == NULL) return;
+    
     printk(KERN_INFO "Netlink message header: \'start dump\'...\n");
     printk("\t\'nlmsg_len\': %d\n", nlh->nlmsg_len);
     printk("\t\'nlmsg_type\': %d\n", nlh->nlmsg_type);
