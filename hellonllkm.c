@@ -4,6 +4,8 @@
 
 #define NETLINK_TEST_PROTOCOL 31
 
+static struct sock *nl_sk = NULL;
+
 static void nlmsg_dump(struct nlmsghdr *nlh)
 {
     if(nlh == NULL) return;
@@ -19,14 +21,53 @@ static void nlmsg_dump(struct nlmsghdr *nlh)
 
 void hellonllkm_rcv_msg(struct sk_buff *skb)
 {
+    struct nlmsghdr *nlh_recv, *nlh_reply;
+    int user_space_process_port_id;
+    char *user_space_data;
+    int user_space_data_len;
+    char *kernel_reply[256];
+    struct sk_buff *skb_out;
+    
+    printk(KERN_INFO "%s invoked\n",__FUNCTION__);
+    
+    nlh_recv = (struct nlmsghdr*) skb;
+    user_space_process_port_id = nlh_recv->nlmsg_pid;
+    
+    nlmsg_dump(nlh_recv);
+    
+    printk(KERN_INFO "%s(%d): port id of the sending user space process = %u\n",__FUNCTION__,__LINE__,user_space_process_port_id);
+    
+    user_space_data = (char*)nlmsg_data(nlh_recv);
+    user_space_data_len = skb->len;
+    
+    printk(KERN_INFO "%s(%d) user space has sent message: %s, skb->len=%d, nlh_recv->nlmsg_len=%d\n", __FUNCTION__, __LINE__, user_space_data, user_space_data_len, nlh_recv->nlmsg_len);
+    
+    if(nlh_recv->nlmsg_flags & NLM_F_ACK)
+    {
+        memset(kernel_reply,0,sizeof(kernel_reply));
+        snprintf(kernel_reply, sizeof(kernel_reply), "Msg from process %d has been processed by kernel", nlh_recv->nlmsg_pid);
+        skb_out = nlmsg_new(sizeof(kernel_reply), 0);
+        nlh_reply = nlmsg_put(skb_out, 
+        		0, //Port ID of kernal, is always 0
+        		nlh_recv->nlmsg_seq, //sequence no of reply must match with seq no of receive header
+        		NLMSG_DONE,
+        		sizeof(kernel_msg), //Size of message can be exact size, but we are sending max size
+        		0 //Flag field for now we can set it to 0
+        		);
+        strncpy(nlmsg_data(nlh_reply), kernel_reply, sizeof(kernel_reply);
+        res = nlmsg_unicast(nl_sk, skb_out, user_space_process_port_id);
+        if(res < 0)
+        {
+            printk(KERN_INFO "Error while sending data back to user-space\n");
+            kfree_skb(skb_out);
+        }
+    }
     
 }
 
 static struct netlink_kernel_cfg hellonlcfg = {
     .input = hellonllkm_rcv_msg,
 };
-
-static struct sock *nl_sk = NULL;
 
 static int __init hellonllkm_start(void)
 {
